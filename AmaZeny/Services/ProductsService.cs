@@ -26,7 +26,9 @@ namespace AmaZeny.Services
 
     public Product Edit(int id, Product data)
     {
-      return _pr.Edit(id, data);
+      var product = Get(id);
+      data.Id = product.Id;
+      return _pr.Edit(data);
     }
 
     public List<Product> Get()

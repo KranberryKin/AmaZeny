@@ -1,14 +1,15 @@
 using System.Collections.Generic;
-using AmaZeny.InterFaces;
+using System.Threading.Tasks;
 using AmaZeny.Models;
 using AmaZeny.Services;
+using CodeWorks.Auth0Provider;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AmaZeny.Controllers
 {
   [ApiController]
   [Route("api/[controller]")]
-  public class ProductsController : ControllerBase, IController<Product>
+  public class ProductsController : ControllerBase
   {
     private readonly ProductsService _ps;
 
@@ -18,10 +19,12 @@ namespace AmaZeny.Controllers
     }
 
     [HttpPost]
-    public ActionResult<Product> Create([FromBody] Product data)
+    public async Task<ActionResult<Product>> Create([FromBody] Product data)
     {
       try
       {
+           Account userInfo = await HttpContext.GetUserInfoAsync<Account>();
+           data.OwnerId = userInfo.Id;
            var product = _ps.Create(data);
            return Ok(product);
       }
@@ -32,10 +35,16 @@ namespace AmaZeny.Controllers
     }
 
     [HttpDelete("{id}")]
-    public void Delete(int id)
+    public async void Delete(int id)
     {
       try
       {
+          Account userInfo = await HttpContext.GetUserInfoAsync<Account>();
+          var foundProduct = _ps.Get(id);
+          if (foundProduct.OwnerId != userInfo.Id)
+          {
+            throw new System.Exception("You Can't Do That!");
+          }
            _ps.Delete(id);
            Ok("DeYEETed");
       }
@@ -46,10 +55,17 @@ namespace AmaZeny.Controllers
     }
 
     [HttpPut("{id}")]
-    public ActionResult<Product> Edit(int id, [FromBody] Product data)
+    public async Task<ActionResult<Product>> Edit(int id, [FromBody] Product data)
     {
       try
       {
+          Account userInfo = await HttpContext.GetUserInfoAsync<Account>();
+          var foundProduct = _ps.Get(id);
+          if (foundProduct.OwnerId != userInfo.Id)
+          {
+            throw new System.Exception("You Can't Do That!");
+          }
+          data.OwnerId = userInfo.Id;
            var product = _ps.Edit(id, data);
            return Ok(product);
       }
